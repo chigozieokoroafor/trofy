@@ -29,4 +29,8 @@ class NoSql:
         except:
             return {"error":"couldn't connect to collection"}
         return collection
+    
+    def list_collections(self):
+        connection =  self.connect()
+        connection.get_database
 

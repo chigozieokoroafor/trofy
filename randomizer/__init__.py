@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from randomizer.route.auth import auth
+from randomizer.route import auth
 
 app = Flask(__name__)
 CORS(app)
