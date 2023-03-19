@@ -46,8 +46,9 @@ def connect():
     if check != None:
         return {"success":True, "message":"connection created successfully"}, 200
     return {"success":False, "message":"Unauthorized access"}, 401
-    
 
+#
+@route.route("/specifyCollectionName", methods=["POST"])
 
 
 
