@@ -25,12 +25,12 @@ class NoSql:
     def db_collection(self, collection_name):
         try:
             connection = self.connect()
-            collection = connection[collection_name]
+            collection = connection.get_database(collection_name)
         except:
             return {"error":"couldn't connect to collection"}
+        print(collection.list_collection_names())
         return collection
-    
-    def list_collections(self):
-        connection =  self.connect()
-        connection.get_database
+    # def list_collections(self):
+    #     connection =  self.connect()
+    #     connection.get_database
 

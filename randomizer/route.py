@@ -13,29 +13,36 @@ def getKey():
     db_type = request.json.get("db_type")
     nameOfDb = request.json.get("nameOfDB")
     dbName = request.json.get("dbName") #this is the specific name of the db containing the collection that would be used.
+    collectionTableName = request.json.get("col_table_name")
 
     
-    if nameOfDb in support:
+    if nameOfDb.lower() in support:
+        if nameOfDb.lower() == "mongodb":
         #currently, this supports only mongodb
-        conn = NoSql(connection_string).connect()
-        if conn != None:
-            api_key = createKey()
-            data = {
-                "_id":api_key,
-                "connect_string":connection_string,
-                "type":db_type, 
-                "dbName":dbName, 
-                "nameOfDb":nameOfDb
-            }
-            try:
-                users.insert_one(data)
-            except:
+            conn = NoSql(connection_string).connect()
+            if conn != None:
                 api_key = createKey()
-                data["_id"] =  api_key
-                users.insert_one(data)
+                data = {
+                    "_id":api_key,
+                    "connect_string":connection_string,
+                    "type":db_type, 
+                    "dbName":dbName, 
+                    "nameOfDb":nameOfDb,
+                    "col_table_name":collectionTableName
+                }
+                try:
+                    users.insert_one(data)
+                except:
+                    api_key = createKey()
+                    data["_id"] =  api_key
+                    users.insert_one(data)
 
-            return {"success":True, "api_key":api_key, "message":""}, 200
-        return {"success":False, "api_key":"", "message":"couldn't connect to NoSQL db using connection string provided"}, 400
+                return {"success":True, "api_key":api_key, "message":""}, 200
+            return {"success":False, "api_key":"", "message":"couldn't connect to NoSQL db using connection string provided"}, 400
+        
+        else:
+            return {"success":False, "api_key":"", "message":f"{nameOfDb} currently not available"}
+
     return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
 
 # don't know what exactly i would be using this for. 
@@ -44,11 +51,14 @@ def connect():
     api_key = request.headers.get("api_key")
     check = users.find_one({"_id":api_key})
     if check != None:
+        connection_string = check["connect_string"]
+        db_name = check["dbName"]
+        conn = NoSql(connection_string).db_collection(db_name)
+        print(conn)
         return {"success":True, "message":"connection created successfully"}, 200
     return {"success":False, "message":"Unauthorized access"}, 401
 
-#
-@route.route("/specifyCollectionName", methods=["POST"])
+
 
 
 
