@@ -1,2 +1,5 @@
 venv
-randomizer/__pycache__
+__pycache__
+linuxvenv
+.pytest*
+.vscode

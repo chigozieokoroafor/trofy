@@ -54,7 +54,7 @@ def connect():
         connection_string = check["connect_string"]
         db_name = check["dbName"]
         conn = NoSql(connection_string).db_collection(db_name)
-        print(conn)
+        
         return {"success":True, "message":"connection created successfully"}, 200
     return {"success":False, "message":"Unauthorized access"}, 401
 
