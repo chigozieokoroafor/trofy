@@ -3,3 +3,4 @@ __pycache__
 linuxvenv
 .pytest*
 .vscode
+*.ipynb

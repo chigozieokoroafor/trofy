@@ -1,5 +1,6 @@
 import random, string
 from pymongo.mongo_client import  MongoClient
+from pymongo.collection import Collection
 
 def createKey():
     a = random.choices(string.ascii_letters, k= 20)
@@ -11,8 +12,9 @@ class Sql:
         self.connect_string = connect_string
 
 class NoSql:
-    def __init__(self, connect_string) :
+    def __init__(self, connect_string, dbName) :
         self.connect_string = connect_string
+        self.dbName = dbName
     
     def connect(self):
         try:
@@ -22,14 +24,22 @@ class NoSql:
         
         return client_session
 
-    def db_collection(self, collection_name):
+    def getDatabase(self):
         try:
             connection = self.connect()
-            collection = connection.get_database(collection_name)
+            db = connection.get_database(self.dbName)
+            #collection.get_collection()
         except:
             return {"error":"couldn't connect to collection"}
-        print(collection.list_collection_names())
-        return collection
+        
+        return db
+    def getCollection(self, collection_name):
+        db = self.getDatabase()
+        col = db.get_collection(collection_name)
+        if type(col) == Collection:
+            return col, True
+        else:
+            return f"{collection_name} not found", False
     # def list_collections(self):
     #     connection =  self.connect()
     #     connection.get_database
