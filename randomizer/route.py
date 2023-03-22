@@ -53,9 +53,30 @@ def getKey():
     return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
 
  
-@route.route("/getDatabaseData", methods=["GET"])
-def connect():
-    api_key = request.args.get("api_key")
+@route.route("/getDatabaseData", methods=["GET"]) # add sort filters
+def fetchD():
+    api_key = request.headers.get("api_key")
+    filter_key = request.args.get("filter_key")
+    limit = request.args.get("limit") or 5
+    page = request.args.get("page") or 1
+    filter_key_dtype = request.args.get("filter_key_dtype")
+    filter_key_value = request.args.get("filter_key_value") #only works for type int, float and double.
+    # sorter = request.args.get("sortby")
+
+    filter_data = {}
+    if filter_key_dtype == "int":
+        filter_data[filter_key] = {"$gte":int(filter_key_value)}
+    if filter_key_dtype == "float" or filter_key_dtype == "double":
+        filter_data[filter_key] = {"$gte":float(filter_key_value)}
+    else:
+        filter_data[filter_key] = filter_key_value
+    limit =  int(limit)
+    page = int(page)
+    skip = (page* limit) - limit
+    
+    # print(filter_data)
+
+    # print(page, limit , skip)
 
     check = users.find_one({"_id":api_key})
     if check != None:
@@ -67,7 +88,7 @@ def connect():
             # if type(conn[])==Database:
             #     return {"success":True, "message":"connection created successfully"}, 200
             if conn[1] == True:
-                cursor = conn[0].find()
+                cursor = conn[0].find(filter_data).skip(skip).limit(limit)#.sort(sorter)
                 ls = []
                 for i in cursor:
                     keys =[x for x in i.keys()]
@@ -89,9 +110,11 @@ def connect():
 
 @route.route("/connectionData", methods=["PUT", "GET"])
 def updateConnectiondata():
-    api_key = request.args.get("api_key")
+    api_key = request.headers.get("api_key")
+    # print(api_key)
     check = users.find_one({"_id":api_key})
-    if check!= None:
+    # print(check)
+    if check != None:
         if request.method == "GET":
             data = check
             data.pop("_id")
