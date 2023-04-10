@@ -8,7 +8,9 @@ from pymongo.database import Database
 from bson import ObjectId
 
 support = ["postgresql", "mongodb", "sqlite3", "redis"]
+
 route =  Blueprint("auth", __name__, url_prefix="/api")
+
 
 
 @route.route("/getAPIKey", methods=["POST"])
@@ -108,6 +110,7 @@ def fetchD():
         
     return {"success":False, "message":"Unauthorized access"}, 401
 
+
 @route.route("/connectionData", methods=["PUT", "GET"])
 def updateConnectiondata():
     api_key = request.headers.get("api_key")
@@ -146,4 +149,7 @@ def updateConnectiondata():
     return jsonify({"success":False, "message":"Invalid Api-Key"}), 400
 
 
+@route.route("/fetchbyTrofyRating", methods=["GET"])
+def fetchBytrofyrating():
+    pass
 

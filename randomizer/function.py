@@ -33,6 +33,7 @@ class NoSql:
             return {"error":"couldn't connect to collection"}
         
         return db
+    
     def getCollection(self, collection_name):
         db = self.getDatabase()
         col = db.get_collection(collection_name)
@@ -40,7 +41,5 @@ class NoSql:
             return col, True
         else:
             return f"{collection_name} not found", False
-    # def list_collections(self):
-    #     connection =  self.connect()
-    #     connection.get_database
+    
 
