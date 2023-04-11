@@ -148,8 +148,26 @@ def updateConnectiondata():
                     return jsonify({"message":"invalid connection string", "success":False}),  400
     return jsonify({"success":False, "message":"Invalid Api-Key"}), 400
 
-
+#  this gets data for specific user by the preference specified.
 @route.route("/fetchbyTrofyRating", methods=["GET"])
 def fetchBytrofyrating():
     pass
+
+@route.route("/getUserPreference", methods=["POST", "GET", "PUT"])
+def userPref():
+    api_key = request.headers.get("api_key")
+    check = users.find_one({"_id":api_key})
+    # print(check)
+    if check != None:
+        if request.method == "GET":
+            pass
+        if request.method == "POST": # to get users preference
+            info =  request.json
+            user_id = info.get("user_id") #user_id
+            pref_scale = info.get("pref_scale") #float
+            pref_category = info.get("pref_category") #string this is the preferred category for a specific 
+        if request.method == "PUT": # to update specific user_preference
+            pass
+
+    return jsonify({"success":False, "message":"Invalid Api-Key"}), 400
 
