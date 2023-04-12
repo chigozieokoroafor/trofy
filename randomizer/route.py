@@ -171,16 +171,40 @@ def userPref():
     if check != None:
         connection_string = check["connect_string"]
         dbName = check["dbName"]
+        col_table_name = check["col_table_name"]
         # conn = NoSql(connection_string,dbName).getDatabase()
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
+            r = 0.0
+            if pref_rating != None:
+                r=float(pref_rating)
+
             if user_id == None:
                 return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
             if user_check != None:
-                user_pref_list = user_check["user_pref"]
-                conn = NoSql(connection_string,dbName).getDatabase()
+                user_pref_list = list(filter(lambda p: r>p["pref_rating"]< r+5 ,user_check["user_pref"]))
+                conn = NoSql(connection_string, dbName).getCollection(col_table_name) #getDatabase(db_name)
+                # if type(conn[])==Database:
+                #     return {"success":True, "message":"connection created successfully"}, 200
+                if conn[1] == True:
+                    ls = []
+                    for pref_list in user_pref_list:
+                        for i in pref_list["item_pref_list"]:
+                            cursor = conn[0].find_one({"_id":ObjectId(i)})
+                            for item in cursor:
+                                keys =[x for x in item.keys()]
+                                for key in keys:
+                                    if type(item[key]) == ObjectId:
+                                        item[key] = str(ObjectId(item[key]))
+                                    if type(item[key]) == dict or type(item[key]) == list:
+                                        item.pop(key)
+                                ls.append(item)
+                    # print(ls)
+                    return jsonify({"success":True, "message":"", "data":ls}), 200
+                else:        
+                    return jsonify({"success":False, "message":"unable to connect"}), 400
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
 
 
