@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 # from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from randomizer.function import NoSql, createKey
-from randomizer.config import users
+from randomizer.config import users, db
 import pymongo
 from pymongo.database import Database
 from bson import ObjectId
@@ -39,12 +39,22 @@ def getKey():
                     "nameOfDb":nameOfDb,
                     "col_table_name":collectionTableName
                 }
+
                 try:
                     users.insert_one(data)
+                    db.create_collection(api_key)
+                    db_data_list = conn[collectionTableName].find()
+                    ls = [str(i["_id"]) for i in db_data_list]
+                    db[api_key].insert_one({"items": ls, "tag":"items"})
+                    # db[api_key]
                 except:
                     api_key = createKey()
                     data["_id"] =  api_key
                     users.insert_one(data)
+                    db.create_collection(api_key)
+                    db_data_list = conn[collectionTableName].find()
+                    ls = [str(i["_id"]) for i in db_data_list]
+                    db[api_key].insert_one({"items": ls, "tag":"items"})
 
                 return {"success":True, "api_key":api_key, "message":""}, 200
             return {"success":False, "api_key":"", "message":"couldn't connect to NoSQL db using connection string provided"}, 400
@@ -159,13 +169,51 @@ def userPref():
     check = users.find_one({"_id":api_key})
     # print(check)
     if check != None:
-        if request.method == "GET":
-            pass
+        connection_string = check["connect_string"]
+        dbName = check["dbName"]
+        # conn = NoSql(connection_string,dbName).getDatabase()
+        if request.method == "GET": # this request gets data based on user's preference.
+            user_id = request.args.get("user")
+            pref_rating =  request.args.get("pref_rating")
+            if user_id == None:
+                return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
+            user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
+            if user_check != None:
+                user_pref_list = user_check["user_pref"]
+                conn = NoSql(connection_string,dbName).getDatabase()
+            return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
+
+
         if request.method == "POST": # to get users preference
             info =  request.json
             user_id = info.get("user_id") #user_id
-            pref_scale = info.get("pref_scale") #float
-            pref_category = info.get("pref_category") #string this is the preferred category for a specific 
+            pref_list = info.get("preference_list") # this indicates a list of moods along with their products list
+            # pref_category = info.get("pref_category") # this indicates what product category is being picked.
+            if user_id != None:
+                if type(pref_list) == dict:
+                    pref_keys = [i for i in pref_list.keys()]
+                    if "item_pref_list" not in pref_keys:
+                        return jsonify({"success":False, "message":" 'item_pref_list' required as a list"}), 400
+                    if "pref_rating" not in pref_keys:
+                        return jsonify({"success":False, "message":" 'pref_rating' required as string"}), 400
+                    up_data = {
+                        "_id":user_id,
+                        "user_pref":pref_list,
+                        "tag":"user"
+                    }
+                    db[api_key].insert_one(up_data)
+                    return jsonify({"success":False, "message":" 'preference_list' type should be a dictionary/object"}), 400
+
+                    
+
+                else:
+                    return jsonify({"success":False, "message":" 'preference_list' type should be a dictionary/object"}), 400
+            else:return jsonify({"success":False, "message":" 'user_id' cannot be null"}), 400
+            
+
+
+
+            
         if request.method == "PUT": # to update specific user_preference
             pass
 
