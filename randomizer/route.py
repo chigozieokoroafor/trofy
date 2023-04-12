@@ -214,29 +214,30 @@ def userPref():
             pref_list = info.get("preference_list") # this indicates a list of moods along with their products list
             # pref_category = info.get("pref_category") # this indicates what product category is being picked.
             if user_id != None:
-                if type(pref_list) == dict:
-                    pref_keys = [i for i in pref_list.keys()]
-                    if "item_pref_list" not in pref_keys:
-                        return jsonify({"success":False, "message":" 'item_pref_list' required as a list"}), 400
-                    if "pref_rating" not in pref_keys:
-                        return jsonify({"success":False, "message":" 'pref_rating' required as string"}), 400
-                    up_data = {
+                if type(pref_list) == list:
+                    if len(pref_list) > 0:
+                        for single_items in pref_list:
+                            pref_keys = [i for i in single_items.keys()]
+
+                            if "item_pref_list" not in pref_keys:
+                                return jsonify({"success":False, "message":" 'item_pref_list' required as a list"}), 400
+                            if "pref_rating" not in pref_keys:
+                                return jsonify({"success":False, "message":" 'pref_rating' required as string"}), 400
+                        up_data = {
                         "_id":user_id,
                         "user_pref":pref_list,
                         "tag":"user"
-                    }
-                    db[api_key].insert_one(up_data)
-                    return jsonify({"success":False, "message":" 'preference_list' type should be a dictionary/object"}), 400
-
+                        }
+                        
+                        db[api_key].insert_one(up_data)
+                    # return jsonify({"success":False, "message":" 'preference_list' type should be a list of dictionaries/object"}), 400
+                    return jsonify({"success":True, "message":"Preferences are empty.", "data":[]}), 200
                     
 
                 else:
-                    return jsonify({"success":False, "message":" 'preference_list' type should be a dictionary/object"}), 400
+                    return jsonify({"success":False, "message":" 'preference_list' type should be a list of dictionaries/object"}), 400
             else:return jsonify({"success":False, "message":" 'user_id' cannot be null"}), 400
             
-
-
-
             
         if request.method == "PUT": # to update specific user_preference
             pass
