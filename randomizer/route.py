@@ -19,7 +19,9 @@ def getKey():
     db_type = request.json.get("db_type")
     nameOfDb = request.json.get("nameOfDb")
     dbName = request.json.get("dbName") #this is the specific name of the db containing the collection that would be used.
-    collectionTableName = request.json.get("col_table_name")
+    collectionTableName = request.json.get("group_col_table_name") # this specifies the collection or table containing data using in grouping products
+    itemCollection = request.json.get("item_col_table_name")
+
 
     
     if nameOfDb.lower() in support:
@@ -37,7 +39,8 @@ def getKey():
                     "type":db_type, 
                     "dbName":dbName, 
                     "nameOfDb":nameOfDb,
-                    "col_table_name":collectionTableName
+                    "col_table_name":collectionTableName,
+                    "itemCollection":itemCollection
                 }
 
                 try:
@@ -76,12 +79,13 @@ def fetchD():
     # sorter = request.args.get("sortby")
 
     filter_data = {}
-    if filter_key_dtype == "int":
-        filter_data[filter_key] = {"$gte":int(filter_key_value)}
-    if filter_key_dtype == "float" or filter_key_dtype == "double":
-        filter_data[filter_key] = {"$gte":float(filter_key_value)}
-    else:
-        filter_data[filter_key] = filter_key_value
+    if filter_key != None:
+        if filter_key_dtype == "int":
+            filter_data[filter_key] = {"$gte":int(filter_key_value)}
+        if filter_key_dtype == "float" or filter_key_dtype == "double":
+            filter_data[filter_key] = {"$gte":float(filter_key_value)}
+        else:
+            filter_data[filter_key] = filter_key_value
     limit =  int(limit)
     page = int(page)
     skip = (page* limit) - limit
@@ -132,6 +136,7 @@ def updateConnectiondata():
             data = check
             data.pop("_id")
             return jsonify({"success":True, "message":"", "data":data}), 200
+        
         if request.method == "PUT":
             connection_string = request.json.get("db_string")
             db_type = request.json.get("db_type")
