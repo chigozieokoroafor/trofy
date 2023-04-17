@@ -3,9 +3,9 @@ from flask import Blueprint, request, jsonify
 from itsdangerous import URLSafeTimedSerializer
 from randomizer.function import NoSql, createKey
 from randomizer.config import users, db
-import pymongo
-from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
+# from bson.errors import 
 
 support = ["postgresql", "mongodb", "sqlite3", "redis"]
 
@@ -19,8 +19,10 @@ def getKey():
     db_type = request.json.get("db_type")
     nameOfDb = request.json.get("nameOfDb")
     dbName = request.json.get("dbName") #this is the specific name of the db containing the collection that would be used.
-    collectionTableName = request.json.get("group_col_table_name") # this specifies the collection or table containing data using in grouping products
-    itemCollection = request.json.get("item_col_table_name")
+    collectionTableName = request.json.get("groupCollection") # this specifies the collection or table containing data using in grouping products
+    itemCollection = request.json.get("itemCollection")
+    groupKeyName = request.json.get("groupKeyName") # this is the key used to identify the products in a specific group.
+    
 
 
     
@@ -39,8 +41,9 @@ def getKey():
                     "type":db_type, 
                     "dbName":dbName, 
                     "nameOfDb":nameOfDb,
-                    "col_table_name":collectionTableName,
-                    "itemCollection":itemCollection
+                    "groupCollection":collectionTableName,
+                    "itemCollection":itemCollection,
+                    "groupKeyName":groupKeyName
                 }
 
                 try:
@@ -68,7 +71,7 @@ def getKey():
     return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
 
  
-@route.route("/getDatabaseData", methods=["GET"]) # add sort filters
+@route.route("/fetchGroups", methods=["GET"]) # add sort filters
 def fetchD():
     api_key = request.headers.get("api_key")
     filter_key = request.args.get("filter_key")
@@ -98,7 +101,7 @@ def fetchD():
     if check != None:
         connection_string = check["connect_string"]
         db_name = check["dbName"]
-        col_table_name = check["col_table_name"]
+        col_table_name = check["groupCollection"]
         try:
             conn = NoSql(connection_string, db_name).getCollection(col_table_name) #getDatabase(db_name)
             # if type(conn[])==Database:
@@ -124,7 +127,7 @@ def fetchD():
         
     return {"success":False, "message":"Unauthorized access"}, 401
 
-
+# reqrite the put request to be able to update the new changes in the getAPIKey request.
 @route.route("/connectionData", methods=["PUT", "GET"])
 def updateConnectiondata():
     api_key = request.headers.get("api_key")
@@ -142,7 +145,8 @@ def updateConnectiondata():
             db_type = request.json.get("db_type")
             nameOfDb = request.json.get("nameOfDb")
             dbName = request.json.get("dbName") #this is the specific name of the db containing the collection that would be used.
-            collectionTableName = request.json.get("col_table_name")
+            groupCollection = request.json.get("groupCollection")
+            itemCollection = request.json.get("itemCollection")
 
             
             if nameOfDb.lower() in support:
@@ -156,7 +160,8 @@ def updateConnectiondata():
                             "type":db_type, 
                             "dbName":dbName, 
                             "nameOfDb":nameOfDb,
-                            "col_table_name":collectionTableName
+                            "groupCollection":groupCollection,
+                            "itemCollection":itemCollection
                         }
                         users.update_one({"_id":api_key}, {"$set":data})
                         return jsonify({"success":True, "message":"connection details uploaded"}), 200
@@ -164,9 +169,40 @@ def updateConnectiondata():
     return jsonify({"success":False, "message":"Invalid Api-Key"}), 400
 
 #  this gets data for specific user by the preference specified.
-@route.route("/fetchbyTrofyRating", methods=["GET"])
+# this wouldn't be useful but don't delete it yet
+@route.route("/fetchGroupItems", methods=["GET"])
 def fetchBytrofyrating():
-    pass
+    api_key = request.headers.get("api_key")
+    check = users.find_one({"_id":api_key})
+    group_id = request.args.get("id")
+    if check != None:
+        connection_string = check["connect_string"]
+        db_name = check["dbName"]
+        itemCollection = check["itemCollection"]
+        keyName = check["groupKeyName"]
+        
+        try:
+            conn = NoSql(connection_string, db_name).getCollection(itemCollection) #getDatabase(db_name)
+            # if type(conn[])==Database:
+            #     return {"success":True, "message":"connection created successfully"}, 200
+            if conn[1] == True:
+                cursor = conn[0].find({keyName:ObjectId(group_id), "$expr":{"$rand":{}}}) #.sort(sorter)
+                ls = []
+                for i in cursor:
+                    keys =[x for x in i.keys()]
+                    for key in keys:
+                        if type(i[key]) == ObjectId:
+                            i[key] = str(ObjectId(i[key]))
+                        if type(i[key]) == dict or type(i[key]) == list:
+                            i.pop(key)
+                    ls.append(i)
+                # print(ls)
+                return jsonify({"success":True, "message":"", "data":ls}), 200
+            else:        
+                return jsonify({"success":False, "message":"unable to connect"}), 400
+        except Exception as E:
+            return jsonify({"success":False, "message":str(E)}), 400
+
 
 @route.route("/getUserPreference", methods=["POST", "GET", "PUT"])
 def userPref():
@@ -176,11 +212,12 @@ def userPref():
     if check != None:
         connection_string = check["connect_string"]
         dbName = check["dbName"]
-        col_table_name = check["col_table_name"]
+        
         # conn = NoSql(connection_string,dbName).getDatabase()
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
+            itemCollection = check["itemCollection"]
             r = 0.0
             if pref_rating != None:
                 r=float(pref_rating)
@@ -190,7 +227,7 @@ def userPref():
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
             if user_check != None:
                 user_pref_list = list(filter(lambda p: r>p["pref_rating"]< r+5 ,user_check["user_pref"]))
-                conn = NoSql(connection_string, dbName).getCollection(col_table_name) #getDatabase(db_name)
+                conn = NoSql(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
                 # if type(conn[])==Database:
                 #     return {"success":True, "message":"connection created successfully"}, 200
                 if conn[1] == True:
@@ -233,10 +270,15 @@ def userPref():
                         "user_pref":pref_list,
                         "tag":"user"
                         }
+                        try:
+                            db[api_key].insert_one(up_data)
+                            return jsonify({"success":True, "message":"Preferences uploaded.", "data":[]}), 200
+                        except DuplicateKeyError as e:
+                            db[api_key].update_one({"_id":user_id},{"$set": {"user_pref":pref_list}})
+                            return jsonify({"success":True, "message":"Preferences updated.", "data":[]}), 200
                         
-                        db[api_key].insert_one(up_data)
                     # return jsonify({"success":False, "message":" 'preference_list' type should be a list of dictionaries/object"}), 400
-                    return jsonify({"success":True, "message":"Preferences are empty.", "data":[]}), 200
+                    
                     
 
                 else:
