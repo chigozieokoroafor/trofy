@@ -91,7 +91,7 @@ def fetchD():
             filter_data[filter_key] = filter_key_value
     limit =  int(limit)
     page = int(page)
-    skip = (page* limit) - limit
+    skip = (page * limit) - limit
     
     # print(filter_data)
 
@@ -217,7 +217,7 @@ def userPref():
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
-            itemCollection = check["itemCollection"]
+            itemCollection = check["itemCollection"] 
             r = 0.0
             if pref_rating != None:
                 r=float(pref_rating)
