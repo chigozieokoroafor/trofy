@@ -5,6 +5,11 @@ from randomizer.function import NoSql, createKey
 from randomizer.config import users, db
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
+import collections
+import random
+
+
+
 # from bson.errors import 
 
 support = ["postgresql", "mongodb", "sqlite3", "redis"]
@@ -207,17 +212,18 @@ def fetchBytrofyrating():
 @route.route("/getUserPreference", methods=["POST", "GET", "PUT"])
 def userPref():
     api_key = request.headers.get("api_key")
+    if api_key == None:
+        return jsonify({"success":False, "message":"api_key required"}), 400
     check = users.find_one({"_id":api_key})
-    # print(check)
     if check != None:
-        connection_string = check["connect_string"]
-        dbName = check["dbName"]
+        # connection_string = check["connect_string"]
+        # dbName = check["dbName"]
         
         # conn = NoSql(connection_string,dbName).getDatabase()
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
-            itemCollection = check["itemCollection"] 
+            # itemCollection = check["itemCollection"] 
             r = 0.0
             if pref_rating != None:
                 r=float(pref_rating)
@@ -225,28 +231,45 @@ def userPref():
             if user_id == None:
                 return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
+            
             if user_check != None:
-                user_pref_list = list(filter(lambda p: r>p["pref_rating"]< r+5 ,user_check["user_pref"]))
-                conn = NoSql(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
+                # user_pref_list = list(filter(lambda p: r>p["pref_rating"]< r+5 ,user_check["user_pref"]))
+                # print(user_pref_list)
+                # print(user_check["products_pref"])
+                # print(r)
+                # user_pref_list = list(filter(lambda p: r>p["trofy_rating"]< r+5, user_check["products_pref"]))
+                # print(user_pref_list)
+                user_pref_list = []
+                for i in user_check["products_pref"]:
+                    if r < i["trofy_rating"] < r+3.0:
+                                keys =[x for x in i.keys()]
+                                for key in keys:
+                                    if type(i[key]) == ObjectId:
+                                        i[key] = str(ObjectId(i[key]))
+                                    if type(i[key]) == dict or type(i[key]) == list:
+                                        i.pop(key)
+                                user_pref_list.append(i)
+                if len(user_pref_list) != 0:
+                    rand =  random.choices(user_pref_list, k=3)   
+                # conn = NoSql(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
                 # if type(conn[])==Database:
                 #     return {"success":True, "message":"connection created successfully"}, 200
-                if conn[1] == True:
-                    ls = []
-                    for pref_list in user_pref_list:
-                        for i in pref_list["item_pref_list"]:
-                            cursor = conn[0].find_one({"_id":ObjectId(i)})
-                            for item in cursor:
-                                keys =[x for x in item.keys()]
-                                for key in keys:
-                                    if type(item[key]) == ObjectId:
-                                        item[key] = str(ObjectId(item[key]))
-                                    if type(item[key]) == dict or type(item[key]) == list:
-                                        item.pop(key)
-                                ls.append(item)
+                # if conn[1] == True:
+                #     ls = []
+                #     for pref_list in user_pref_list:
+                #         for i in pref_list["item_pref_list"]:
+                #             cursor = conn[0].find_one({"_id":ObjectId(i)})
+                #             for item in cursor:
+                #                 keys =[x for x in item.keys()]
+                #                 for key in keys:
+                #                     if type(item[key]) == ObjectId:
+                #                         item[key] = str(ObjectId(item[key]))
+                #                     if type(item[key]) == dict or type(item[key]) == list:
+                #                         item.pop(key)
+                                # ls.append(item)
                     # print(ls)
-                    return jsonify({"success":True, "message":"", "data":ls}), 200
-                else:        
-                    return jsonify({"success":False, "message":"unable to connect"}), 400
+                return jsonify({"success":True, "message":"", "data":rand}), 200
+                
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
 
 

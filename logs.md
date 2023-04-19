@@ -11,4 +11,5 @@ April 12
 April 18
     started working on the monitor to get products from each category for specific users.
     cleaning up the monitoring/scheduler codes.
+    Done with getting user's preferences.
 

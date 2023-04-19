@@ -50,7 +50,7 @@ async def fetch_user_products(): # not done with this yet
                                         product_keys = [key for key in specific_product.keys() if type(key)==ObjectId]
                                         for keys in product_keys:
                                             specific_product[keys] = str(specific_product[keys])
-                                        specific_product["trofy_rating"] = rating
+                                        specific_product["trofy_rating"] = float(rating)
 
                                         product_list.append(specific_product)
                                     db[user_["_id"]].update_one({"_id":i["_id"]}, {"$set":{"products_pref":product_list}})
