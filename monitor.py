@@ -6,27 +6,28 @@ from bson import ObjectId
 
 # scheduler = BackgroundScheduler(job_defaults={'max_instances': 5000})
 
-user_list = []
+users_list = []
 
 async def fetchAPiKeys():
     while True:
         await asyncio.sleep(10)
         try:
-            if len(user_list)<1:
+            if len(users_list)<1:
                 all_users = users.find()
-                user_list = list(i for i in  all_users)
-                return user_list
+                for i in all_users:
+                    users_list.append(i)
+                    print(i)
         except UnboundLocalError as e :
             print(e)
 
 async def fetch_user_products(): # not done with this yet
     while True:
         await asyncio.sleep(2)
-        if len(user_list) > 0:
+        if len(users_list) > 0:
             # either create a loop here to check for new items
             # for user_ in user_list:
             try:
-                user_ = user_list[0]
+                user_ = users_list[0]
                 o_col = user_["itemCollection"]
                 groupKeyName = user_["groupKeyName"]
                 if  user_["type"].lower() == "nosql":
@@ -57,7 +58,7 @@ async def fetch_user_products(): # not done with this yet
 
 
 
-                    user_list.pop(0)
+                    users_list.pop(0)
             except IndexError as e:
                 print("list empty")
     
