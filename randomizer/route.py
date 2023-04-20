@@ -268,7 +268,7 @@ def userPref():
                 #                         item.pop(key)
                                 # ls.append(item)
                     # print(ls)
-                return jsonify({"success":True, "message":"", "data":rand}), 200
+                    return jsonify({"success":True, "message":"", "data":rand}), 200
                 
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
 
