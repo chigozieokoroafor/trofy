@@ -249,6 +249,7 @@ def userPref():
                                     if type(i[key]) == dict or type(i[key]) == list:
                                         i.pop(key)
                                 user_pref_list.append(i)
+                rand = []
                 if len(user_pref_list) != 0:
                     rand =  random.choices(user_pref_list, k=3)   
                 # conn = NoSql(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
@@ -268,7 +269,7 @@ def userPref():
                 #                         item.pop(key)
                                 # ls.append(item)
                     # print(ls)
-                    return jsonify({"success":True, "message":"", "data":rand}), 200
+                return jsonify({"success":True, "message":"", "data":rand}), 200
                 
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
 
