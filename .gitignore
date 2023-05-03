@@ -4,3 +4,5 @@ linuxvenv
 .pytest*
 .vscode
 *.ipynb
+test
+test.py
