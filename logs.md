@@ -13,3 +13,5 @@ April 18
     cleaning up the monitoring/scheduler codes.
     Done with getting user's preferences.
 
+Use the products csv list downloaded to create and populate new table to use to test locally.
+
