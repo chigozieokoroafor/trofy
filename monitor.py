@@ -1,11 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from randomizer.config import users, db
-from randomizer.function import NoSql
+from randomizer.function import Mongodb, SQLType
 import asyncio
 from bson import ObjectId
 
 # scheduler = BackgroundScheduler(job_defaults={'max_instances': 5000})
-
+sql_major = ["mysql", "postgresql", "mariadb"]
 users_list = []
 
 async def fetchAPiKeys():
@@ -16,11 +16,11 @@ async def fetchAPiKeys():
                 all_users = users.find()
                 for i in all_users:
                     users_list.append(i)
-                    print(i)
+                    
         except UnboundLocalError as e :
             print(e)
 
-async def fetch_user_products(): # not done with this yet
+async def fetch_user_products(): # not done with this yet this works only for mongodb connections.
     while True:
         await asyncio.sleep(2)
         if len(users_list) > 0:
@@ -28,40 +28,92 @@ async def fetch_user_products(): # not done with this yet
             # for user_ in user_list:
             try:
                 user_ = users_list[0]
-                o_col = user_["itemCollection"]
-                groupKeyName = user_["groupKeyName"]
-                if  user_["type"].lower() == "nosql":
-                    collection = NoSql(user_["connect_string"], user_["dbName"]).getCollection(o_col)
-                
-                    comp_users = db[user_["_id"]].find({"tag":"user"})
-                    for i in comp_users:
-                        
-                        users_preferences = i["user_pref"]
-                        for specific in users_preferences:
-                            product_list = []
-                            rating = specific["pref_rating"]
-                            for group_id in specific["item_pref_list"]:
-                                group_find = collection[0].find({groupKeyName:ObjectId(group_id)})
-                                if group_find == None:
-                                    group_find = collection[0].find({groupKeyName:group_id})
-                                
-                                if group_find != None:
-                                    for specific_product in group_find:
-                                        product_keys = [key for key in specific_product.keys() if type(key)==ObjectId]
-                                        for keys in product_keys:
-                                            specific_product[keys] = str(specific_product[keys])
-                                        specific_product["trofy_rating"] = float(rating)
-
-                                        product_list.append(specific_product)
-                                    db[user_["_id"]].update_one({"_id":i["_id"]}, {"$set":{"products_pref":product_list}})
+                # this part for nosql integration.
+                if user_["type"].lower() == "nosql":
+                    if user_["nameOfDb"].lower() == "mongodb":
+                        o_col = user_["itemCollection"]
+                        groupKeyName = user_["groupKeyName"] 
+                        collection = Mongodb(user_["connect_string"], user_["dbName"]).getCollection(o_col)
+                    
+                        comp_users = db[user_["_id"]].find({"tag":"user"})
+                        for i in comp_users:
+                            
+                            users_preferences = i["user_pref"]
+                            for specific in users_preferences:
+                                product_list = []
+                                rating = specific["pref_rating"]
+                                for group_id in specific["item_pref_list"]:
+                                    group_find = collection[0].find({groupKeyName:ObjectId(group_id)})
+                                    if group_find == None:
+                                        group_find = collection[0].find({groupKeyName:group_id})
                                     
+                                    if group_find != None:
+                                        for specific_product in group_find:
+                                            product_keys = [key for key in specific_product.keys() if type(key)==ObjectId]
+                                            for keys in product_keys:
+                                                specific_product[keys] = str(specific_product[keys])
+                                            specific_product["trofy_rating"] = float(rating)
+
+                                            product_list.append(specific_product)
+                                        db[user_["_id"]].update_one({"_id":i["_id"]}, {"$set":{"products_pref":product_list}})
+                                        
 
 
 
-                    users_list.pop(0)
+                        users_list.pop(0)
+
+
+                # this part is for sql databases.
+                
+                if user_["type"].lower() == "sql":
+                    if user_["nameOfDb"].lower() in sql_major:
+                        connect_string = user_["connect_string"]
+                    #    steps
+                    #    1. connect to db
+                    #    2. get list of users for specific aorganization
+                    #    3. access the products table 
+                    #    4. fetch all items under specific group selected by the user.
+                    #    5. upload the data for each user on trofy's database. 
+
+                    #  1
+
+                        itemTable = user_["itemTable"]
+                        foreignKey = user_["foreignKey"]
+                        
+                        data_fetch = SQLType(connect_string, itemTable).getProductData()
+                        
+                        if data_fetch[1]== True:
+                            # 2
+                            all_users = db[user_["_id"]].find({"tag":"user"}) # this gets users
+
+                            for sp_user in all_users:
+                                user_pref = sp_user["user_pref"]
+                                products_list = []
+                                if len(user_pref)>0:
+                                    for pref in user_pref  :
+                                        gp_pref_list = pref["item_pref_list"]
+                                        p_Scale = pref["pref_rating"]
+                                        
+                                        # print(data)
+                                        for product in data_fetch[0]:
+                                            
+                                            if product[foreignKey] in gp_pref_list:
+                                                product["trofy_rating"] = p_Scale
+                                                products_list.append(product)
+                                        
+                                            
+                                    db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                                print(f"done with {sp_user['_id']}")
+                                
+                        else:
+                            print(f"couldn't collate data for {user_['_id']}")
+                    users_list.pop(0)    
+
             except IndexError as e:
                 print("list empty")
-    
+
+# create   async function to pwriodically update item groups in db.
+# for sql figure out how it would be different. 
     
 if __name__ =="__main__":
     loop = asyncio.get_event_loop()

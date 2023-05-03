@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 # from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
-from randomizer.function import NoSql, createKey
+from randomizer.function import Mongodb, createKey, SQLType
 from randomizer.config import users, db
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
@@ -12,7 +12,11 @@ import random
 
 # from bson.errors import 
 
-support = ["postgresql", "mongodb", "sqlite3", "redis"]
+# support = ["postgresql", "mongodb", "sqlite3", "redis"]
+support = {
+    'nosql':["mongodb", "redis"],
+    "sql":["postgres", "mariadb", "mysql"]
+}
 
 route =  Blueprint("auth", __name__, url_prefix="/api")
 
@@ -20,59 +24,124 @@ route =  Blueprint("auth", __name__, url_prefix="/api")
 
 @route.route("/getAPIKey", methods=["POST"])
 def getKey():
-    connection_string = request.json.get("db_string")
+    #  this part is for mongodb nosql database
     db_type = request.json.get("db_type")
-    nameOfDb = request.json.get("nameOfDb")
-    dbName = request.json.get("dbName") #this is the specific name of the db containing the collection that would be used.
-    collectionTableName = request.json.get("groupCollection") # this specifies the collection or table containing data using in grouping products
-    itemCollection = request.json.get("itemCollection")
-    groupKeyName = request.json.get("groupKeyName") # this is the key used to identify the products in a specific group.
+    dbName = request.json.get("dbName")
+    if db_type.lower() == "nosql":
+        connection_string = request.json.get("db_string")    
+        nameOfDb = request.json.get("nameOfDb")
+         #this is the specific name of the db containing the collection that would be used.
+        collectionTableName = request.json.get("groupCollection") # this specifies the collection or table containing data using in grouping products
+        itemCollection = request.json.get("itemCollection")
+        groupKeyName = request.json.get("groupKeyName") # this is the key used to identify the products in a specific group.
+
     
+        if nameOfDb.lower() in support[db_type.lower()]:
+            if nameOfDb.lower() == "mongodb":
+            #currently, this supports only mongodb
+                # db = Mongodb(connection_string)
+                # connection = db.connect()
+                conn = Mongodb(connection_string,dbName).getDatabase()
 
-
-    
-    if nameOfDb.lower() in support:
-        if nameOfDb.lower() == "mongodb":
-        #currently, this supports only mongodb
-            # db = NoSql(connection_string)
-            # connection = db.connect()
-            conn = NoSql(connection_string,dbName).getDatabase()
-
-            if type(conn) != dict:    
-                api_key = createKey()
-                data = {
-                    "_id":api_key,
-                    "connect_string":connection_string,
-                    "type":db_type, 
-                    "dbName":dbName, 
-                    "nameOfDb":nameOfDb,
-                    "groupCollection":collectionTableName,
-                    "itemCollection":itemCollection,
-                    "groupKeyName":groupKeyName
-                }
-
-                try:
-                    users.insert_one(data)
-                    db.create_collection(api_key)
-                    db_data_list = conn[collectionTableName].find()
-                    ls = [str(i["_id"]) for i in db_data_list]
-                    db[api_key].insert_one({"items": ls, "tag":"items"})
-                    # db[api_key]
-                except:
+                if type(conn) != dict:    
                     api_key = createKey()
-                    data["_id"] =  api_key
-                    users.insert_one(data)
-                    db.create_collection(api_key)
-                    db_data_list = conn[collectionTableName].find()
-                    ls = [str(i["_id"]) for i in db_data_list]
-                    db[api_key].insert_one({"items": ls, "tag":"items"})
+                    data = {
+                        "_id":api_key,
+                        "connect_string":connection_string,
+                        "type":db_type, 
+                        "dbName":dbName, 
+                        "nameOfDb":nameOfDb,
+                        "groupCollection":collectionTableName,
+                        "itemCollection":itemCollection,
+                        "groupKeyName":groupKeyName
+                    }
 
-                return {"success":True, "api_key":api_key, "message":""}, 200
-            return {"success":False, "api_key":"", "message":"couldn't connect to NoSQL db using connection string provided"}, 400
-        
-        else:
-            return {"success":False, "api_key":"", "message":f"{nameOfDb} currently not available"}
+                    try:
+                        users.insert_one(data)
+                        db.create_collection(api_key)
+                        db_data_list = conn[collectionTableName].find()
+                        ls = [str(i["_id"]) for i in db_data_list]
+                        db[api_key].insert_one({"items": ls, "tag":"items"})
+                        # db[api_key]
+                    except:
+                        api_key = createKey()
+                        data["_id"] =  api_key
+                        users.insert_one(data)
+                        db.create_collection(api_key)
+                        db_data_list = conn[collectionTableName].find()
+                        ls = [str(i["_id"]) for i in db_data_list]
+                        db[api_key].insert_one({"items": ls, "tag":"items"})
 
+                    return {"success":True, "api_key":api_key, "message":""}, 200
+                return {"success":False, "api_key":"", "message":"couldn't connect to Mongodb db using connection string provided"}, 400
+
+            else:
+                return {"success":False, "api_key":"", "message":f"{nameOfDb} currently not supported"}
+            
+    if db_type.lower()  == "sql":
+        url = request.json.get("db_string")
+        groupTable = request.json.get("groupTable") # this specifies the collection or table containing data using in grouping products
+        itemTable = request.json.get("itemTable")
+        primaryKey = request.json.get("primaryKey") # this is the name of the primaryKey that is used to store the group_id
+        foreignKey = request.json.get("foreignKey") # this is the key that links products to specific groups.
+        nameOfDb = request.json.get("nameOfDb")
+
+        if nameOfDb.lower() in support[db_type.lower()]:
+            if nameOfDb.lower() == "mysql":
+                # connection_check = SQLType(url, groupTable).getTable(primaryKey)
+                connection_check = SQLType(url, groupTable).connect()
+                
+                if connection_check[1] == False:
+                    return jsonify({"success":False, "api_key":"", "message":connection_check[0]})
+                else:
+                    groupFetch = SQLType(url, groupTable).getTableData(primaryKey)
+                    if groupFetch[1] == False:
+                        return  jsonify({"success":False, "api_key":"", "message":groupFetch["detail"]}), 400
+                    
+                    # not sure if this product check is feasible.
+                    # productFetch = SQLType(url, groupTable).getTableData(foreignKey)
+                    # if type(productFetch) != bool:
+                    #     return  jsonify({"success":False, "api_key":"", "message":productFetch["detail"]}), 400
+                    else:
+                        api_key = createKey()
+                        data = {
+                            "_id":api_key,
+                            "connect_string":url,
+                            "type":db_type, 
+                            "dbName":dbName, 
+                            "nameOfDb":nameOfDb,
+                            "groupTable":groupTable,
+                            "itemTable":itemTable,
+                            "primaryKey":primaryKey,
+                            "foreignKey":foreignKey
+                        }
+
+                        try:
+                            users.insert_one(data)
+                            db.create_collection(api_key)
+                            db_data_list = SQLType(url, groupTable).getTableData(primaryKey) # will have to test this out
+                            
+                            if db_data_list[1] == True:
+                                ls = db_data_list[0]
+                                db[api_key].insert_one({"items": ls, "tag":"items"})
+                            else:
+                                return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
+                        except:
+                            api_key = createKey()
+                            data["_id"] =  api_key
+                            users.insert_one(data)
+                            db.create_collection(api_key)
+                            db_data_list = SQLType(url, groupTable).getTableData(primaryKey) # will have to test this out
+                            
+                            if db_data_list[1] == True:
+                                ls = db_data_list[0]
+                                db[api_key].insert_one({"items": ls, "tag":"items"})
+                            else:
+                                return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
+                        return {"success":True, "api_key":api_key, "message":""}, 200
+                
+
+    
     return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
 
  
@@ -105,30 +174,42 @@ def fetchD():
     check = users.find_one({"_id":api_key})
     if check != None:
         connection_string = check["connect_string"]
-        db_name = check["dbName"]
-        col_table_name = check["groupCollection"]
-        try:
-            conn = NoSql(connection_string, db_name).getCollection(col_table_name) #getDatabase(db_name)
-            # if type(conn[])==Database:
-            #     return {"success":True, "message":"connection created successfully"}, 200
-            if conn[1] == True:
-                cursor = conn[0].find(filter_data).skip(skip).limit(limit)#.sort(sorter)
-                ls = []
-                for i in cursor:
-                    keys =[x for x in i.keys()]
-                    for key in keys:
-                        if type(i[key]) == ObjectId:
-                            i[key] = str(ObjectId(i[key]))
-                        if type(i[key]) == dict or type(i[key]) == list:
-                            i.pop(key)
-                    ls.append(i)
-                # print(ls)
-                return jsonify({"success":True, "message":"", "data":ls}), 200
-            else:        
-                return jsonify({"success":False, "message":"unable to connect"}), 400
-        except Exception as E:
-            return jsonify({"success":False, "message":str(E)}), 400
+
+        if check["type"].lower() == "nosql":
+            db_name = check["dbName"]
+            col_table_name = check["groupCollection"]
+            try:
+                conn = Mongodb(connection_string, db_name).getCollection(col_table_name) #getDatabase(db_name)
+                # if type(conn[])==Database:
+                #     return {"success":True, "message":"connection created successfully"}, 200
+                if conn[1] == True:
+                    cursor = conn[0].find(filter_data).skip(skip).limit(limit)#.sort(sorter)
+                    ls = []
+                    for i in cursor:
+                        keys =[x for x in i.keys()]
+                        for key in keys:
+                            if type(i[key]) == ObjectId:
+                                i[key] = str(ObjectId(i[key]))
+                            if type(i[key]) == dict or type(i[key]) == list:
+                                i.pop(key)
+                        ls.append(i)
+                    # print(ls)
+                    return jsonify({"success":True, "message":"", "data":ls}), 200
+                else:        
+                    return jsonify({"success":False, "message":"unable to connect"}), 400
+            except Exception as E:
+                return jsonify({"success":False, "message":str(E)}), 400
         
+        if check["type"].lower() == "sql":
+            dbName = check["dbName"]
+            groupTable = check["groupTable"]
+            data = SQLType(connection_string, groupTable).getGroupData()
+
+            # add the filters later on
+            print(data)
+            if data[1] == True:
+                return jsonify({"success":True, "message":"", "data":data[0]}), 200
+
         
     return {"success":False, "message":"Unauthorized access"}, 401
 
@@ -157,7 +238,7 @@ def updateConnectiondata():
             if nameOfDb.lower() in support:
                 if nameOfDb.lower() == "mongodb":
                 #currently, this supports only mongodb
-                    conn = NoSql(connection_string, dbName).getDatabase()
+                    conn = Mongodb(connection_string, dbName).getDatabase()
                     if type(conn) != dict:
                         
                         data = {
@@ -187,7 +268,7 @@ def fetchBytrofyrating():
         keyName = check["groupKeyName"]
         
         try:
-            conn = NoSql(connection_string, db_name).getCollection(itemCollection) #getDatabase(db_name)
+            conn = Mongodb(connection_string, db_name).getCollection(itemCollection) #getDatabase(db_name)
             # if type(conn[])==Database:
             #     return {"success":True, "message":"connection created successfully"}, 200
             if conn[1] == True:
@@ -219,12 +300,12 @@ def userPref():
         # connection_string = check["connect_string"]
         # dbName = check["dbName"]
         
-        # conn = NoSql(connection_string,dbName).getDatabase()
+        # conn = Mongodb(connection_string,dbName).getDatabase()
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
             # itemCollection = check["itemCollection"] 
-            r = 0.0
+            r = 5.0
             if pref_rating != None:
                 r=float(pref_rating)
 
@@ -240,7 +321,7 @@ def userPref():
                 # user_pref_list = list(filter(lambda p: r>p["trofy_rating"]< r+5, user_check["products_pref"]))
                 # print(user_pref_list)
                 user_pref_list = []
-                for i in user_check["products_pref"]:
+                for i in user_check["products_perf"]:
                     if r < i["trofy_rating"] < r+3.0:
                                 keys =[x for x in i.keys()]
                                 for key in keys:
@@ -252,7 +333,7 @@ def userPref():
                 rand = []
                 if len(user_pref_list) != 0:
                     rand =  random.choices(user_pref_list, k=3)   
-                # conn = NoSql(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
+                # conn = Mongodb(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
                 # if type(conn[])==Database:
                 #     return {"success":True, "message":"connection created successfully"}, 200
                 # if conn[1] == True:
@@ -274,7 +355,7 @@ def userPref():
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
 
 
-        if request.method == "POST": # to get users preference
+        if request.method == "POST": # to add new preferences
             info =  request.json
             user_id = info.get("user_id") #user_id
             pref_list = info.get("preference_list") # this indicates a list of moods along with their products list
