@@ -15,7 +15,7 @@ import random
 # support = ["postgresql", "mongodb", "sqlite3", "redis"]
 support = {
     'nosql':["mongodb", "redis"],
-    "sql":["postgres", "mariadb", "mysql"]
+    "sql":["postgresql", "mariadb", "mysql"]
 }
 
 route =  Blueprint("auth", __name__, url_prefix="/api")
@@ -87,7 +87,7 @@ def getKey():
         nameOfDb = request.json.get("nameOfDb")
 
         if nameOfDb.lower() in support[db_type.lower()]:
-            if nameOfDb.lower() == "mysql":
+            if nameOfDb.lower() == "mysql" or nameOfDb.lower() == "postgresql":
                 # connection_check = SQLType(url, groupTable).getTable(primaryKey)
                 connection_check = SQLType(url, groupTable).connect()
                 
