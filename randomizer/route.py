@@ -20,7 +20,9 @@ support = {
 
 route =  Blueprint("auth", __name__, url_prefix="/api")
 
-
+@route.route("/healthCheck", methods=["GET"])
+def h():
+    return jsonify({"detail":"Health check success"}), 200
 
 @route.route("/getAPIKey", methods=["POST"])
 def getKey():
