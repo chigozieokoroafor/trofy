@@ -94,7 +94,7 @@ def getKey():
                 connection_check = SQLType(url, groupTable).connect()
                 
                 if connection_check[1] == False:
-                    return jsonify({"success":False, "api_key":"", "message":connection_check[0]})
+                    return jsonify({"success":False, "api_key":"", "message":connection_check[0]}), 400
                 else:
                     groupFetch = SQLType(url, groupTable).getTableData(primaryKey)
                     if groupFetch[1] == False:
