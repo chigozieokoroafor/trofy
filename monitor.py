@@ -1,33 +1,35 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from randomizer.config import users, db
-from randomizer.function import Mongodb, SQLType
+from randomizer.function import Mongodb, SQLType, PostgresqlType
 import asyncio
 from bson import ObjectId
 
 # scheduler = BackgroundScheduler(job_defaults={'max_instances': 5000})
-sql_major = ["mysql", "postgresql", "mariadb"]
+# sql_major = ["mysql", "postgresql", "mariadb"]
 users_list = []
 
 async def fetchAPiKeys():
     while True:
         await asyncio.sleep(10)
-        try:
-            if len(users_list)<1:
-                all_users = users.find()
-                for i in all_users:
-                    users_list.append(i)
+        
+        all_users = users.find()
+        for i in all_users:
+            print(users_list)
+            if i not in users_list:
+                users_list.append(i)
+
                     
-        except UnboundLocalError as e :
-            print(e)
+        # except UnboundLocalError as e :
+        #     print(e)
 
 async def fetch_user_products(): # not done with this yet this works only for mongodb connections.
     while True:
-        await asyncio.sleep(2)
+        await asyncio.sleep(12)
         if len(users_list) > 0:
             # either create a loop here to check for new items
             # for user_ in user_list:
             try:
-                user_ = users_list[0]
+                user_ = users_list.pop(0)
                 # this part for nosql integration.
                 if user_["type"].lower() == "nosql":
                     if user_["nameOfDb"].lower() == "mongodb":
@@ -56,17 +58,10 @@ async def fetch_user_products(): # not done with this yet this works only for mo
 
                                             product_list.append(specific_product)
                                         db[user_["_id"]].update_one({"_id":i["_id"]}, {"$set":{"products_pref":product_list}})
-                                        
-
-
-
-                        users_list.pop(0)
-
-
+  
                 # this part is for sql databases.
-                
                 if user_["type"].lower() == "sql":
-                    if user_["nameOfDb"].lower() in sql_major:
+                    if user_["nameOfDb"].lower() == "mysql":
                         connect_string = user_["connect_string"]
                     #    steps
                     #    1. connect to db
@@ -103,12 +98,56 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                                         
                                             
                                     db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
-                                print(f"done with {sp_user['_id']}")
+                                # print(f"done with {sp_user['_id']}")
                                 
                         else:
                             print(f"couldn't collate data for {user_['_id']}")
-                    users_list.pop(0)    
+                    
+                    elif user_["nameOfDb"].lower() == "postgresql":
+                        connect_string = user_["connect_string"]
+                    #    steps
+                    #    1. connect to db
+                    #    2. get list of users for specific aorganization
+                    #    3. access the products table 
+                    #    4. fetch all items under specific group selected by the user.
+                    #    5. upload the data for each user on trofy's database. 
 
+                    #  1
+
+                        itemTable = user_["itemTable"]
+                        foreignKey = user_["foreignKey"]
+                        
+                        data_fetch = PostgresqlType(connect_string).dataFetch(itemTable)
+                        
+                        if data_fetch[1]== True:
+                            # 2
+                            all_users = db[user_["_id"]].find({"tag":"user"}) # this gets users
+
+                            for sp_user in all_users:
+                                user_pref = sp_user["user_pref"]
+                                products_list = []
+                                if len(user_pref)>0:
+                                    for pref in user_pref  :
+                                        gp_pref_list = pref["item_pref_list"]
+                                        p_Scale = pref["pref_rating"]
+                                        
+                                        # print(data)
+                                        for product in data_fetch[0]:
+                                            
+                                            if product[foreignKey] in gp_pref_list:
+                                                product["trofy_rating"] = p_Scale
+                                                products_list.append(product)
+                                        
+                                            
+                                    db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                                print(f"done with {sp_user['_id']}")
+
+                    # users_list.pop(0)    
+                try:
+                    print(f"done with {user_['_id']}")
+                except KeyError as e:
+                    pass
+                # users_list.pop(0)
             except IndexError as e:
                 print("list empty")
 
