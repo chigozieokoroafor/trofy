@@ -14,7 +14,7 @@ async def fetchAPiKeys():
         
         all_users = users.find()
         for i in all_users:
-            print(users_list)
+            # print(users_list)
             if i not in users_list:
                 users_list.append(i)
 
@@ -132,6 +132,7 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                                         p_Scale = pref["pref_rating"]
                                         
                                         # print(data)
+                                        print(data_fetch[0])
                                         for product in data_fetch[0]:
                                             
                                             if product[foreignKey] in gp_pref_list:
