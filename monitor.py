@@ -105,43 +105,54 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                     
                     elif user_["nameOfDb"].lower() == "postgresql":
                         connect_string = user_["connect_string"]
-                    #    steps
-                    #    1. connect to db
-                    #    2. get list of users for specific aorganization
-                    #    3. access the products table 
-                    #    4. fetch all items under specific group selected by the user.
-                    #    5. upload the data for each user on trofy's database. 
+                                            #    steps
+                                            #    1. connect to db
+                                            #    2. get list of users for specific aorganization
+                                            #    3. access the products table 
+                                            #    4. fetch all items under specific group selected by the user.
+                                            #    5. upload the data for each user on trofy's database. 
 
-                    #  1
+                                            #  1
 
                         itemTable = user_["itemTable"]
-                        foreignKey = user_["foreignKey"]
-                        
-                        data_fetch = PostgresqlType(connect_string).dataFetch(itemTable)
-                        
-                        if data_fetch[1]== True:
-                            # 2
-                            all_users = db[user_["_id"]].find({"tag":"user"}) # this gets users
+                        foreignKey = user_["foreignKey"].lower() # ensure the strings passed here during creation should be string formatted. 
+                                                
+                        # data_fetch = PostgresqlType(connect_string).dataFetch(itemTable, key=foreignKey, tag="item", key_value=) # use tag and keyvalue here
 
-                            for sp_user in all_users:
+                        # print("############################################")
+
+                                                    # 2
+                        all_users = db[user_["_id"]].find({"tag":"user"}) # this gets users
+                        all_users = [ i for i in all_users]
+                        # print(all_users)
+                        for sp_user in all_users:
                                 user_pref = sp_user["user_pref"]
                                 products_list = []
                                 if len(user_pref)>0:
                                     for pref in user_pref  :
                                         gp_pref_list = pref["item_pref_list"]
                                         p_Scale = pref["pref_rating"]
-                                        
-                                        # print(data)
-                                        print(data_fetch[0])
-                                        for product in data_fetch[0]:
-                                            
-                                            if product[foreignKey] in gp_pref_list:
-                                                product["trofy_rating"] = p_Scale
-                                                products_list.append(product)
-                                        
-                                            
-                                    db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
-                                print(f"done with {sp_user['_id']}")
+                                        # print(gp_pref_list)                       
+                                        # print("*************************")
+                                                                # print(data)
+                                        for group_id in gp_pref_list:
+                                            product_fetch = PostgresqlType(connect_string).dataFetch(itemTable, key=foreignKey, key_value=group_id, tag="items")
+                                            keys = PostgresqlType(connect_string).columnsFetch(itemTable, key=foreignKey, key_value=group_id, tag="items")
+                                            if product_fetch[1] == True:
+                                            # print(product_fetch[0])
+                                                product_data = product_fetch[0]
+                                                for prod in product_data:
+                                                    a = zip(keys, prod)
+                                                    json_product = dict(a)
+                                                    if json_product[foreignKey] in gp_pref_list: # what is meant to happen here is  check if the foreign key is the same as the preference that the user selects.
+                                                        
+                                                        json_product["trofy_rating"] = p_Scale
+                                                        products_list.append(json_product)
+                                                                    
+                                                                        
+                                        db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                                        print(f"done with {sp_user['_id']}")
+                                        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                     # users_list.pop(0)    
                 try:
@@ -154,7 +165,7 @@ async def fetch_user_products(): # not done with this yet this works only for mo
 
 # create   async function to pwriodically update item groups in db.
 # for sql figure out how it would be different. 
-    
+
 if __name__ =="__main__":
     loop = asyncio.get_event_loop()
     if loop.is_running() == True:

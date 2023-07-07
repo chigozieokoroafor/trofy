@@ -400,24 +400,8 @@ def userPref():
                                 user_pref_list.append(i)
                 rand = []
                 if len(user_pref_list) != 0:
-                    rand =  random.choices(user_pref_list, k=3)   
-                # conn = Mongodb(connection_string, dbName).getCollection(itemCollection) #getDatabase(db_name)
-                # if type(conn[])==Database:
-                #     return {"success":True, "message":"connection created successfully"}, 200
-                # if conn[1] == True:
-                #     ls = []
-                #     for pref_list in user_pref_list:
-                #         for i in pref_list["item_pref_list"]:
-                #             cursor = conn[0].find_one({"_id":ObjectId(i)})
-                #             for item in cursor:
-                #                 keys =[x for x in item.keys()]
-                #                 for key in keys:
-                #                     if type(item[key]) == ObjectId:
-                #                         item[key] = str(ObjectId(item[key]))
-                #                     if type(item[key]) == dict or type(item[key]) == list:
-                #                         item.pop(key)
-                                # ls.append(item)
-                    # print(ls)
+                    rand =  random.choices(user_pref_list, k=5)   
+
                 return jsonify({"success":True, "message":"", "data":rand}), 200
                 
             return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400

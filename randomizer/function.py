@@ -12,6 +12,24 @@ def createKey():
     key = "tk_"+"".join(a)
     return key
 
+def convDict(keys, array_list):
+    # ls = []
+    # for array in array_list:
+    #     count = 0
+    #     d = {}
+    #     for i in keys:
+    #         d[i] =  array[count]
+    #         count += 1
+    #     ls.append(d)
+
+    # return ls
+    a = zip(keys, array_list)
+    return a
+
+
+
+    
+
 class SQLType:
     def __init__(self, connect_string, tableName) :
         self.connect_string = connect_string
@@ -39,7 +57,7 @@ class SQLType:
             if type(ex) == int and ex > 0:
                 return cursor.fetchall(),True
             else:
-                return {"detail":f"data using primaryKey {primaryKey} not found, provide valid primaryKey", "success":False}
+                return {"detail":f" fetching data using primaryKey {primaryKey} not found, provide valid primaryKey", "success":False}
         except Exception as e:
             return {"detail":str(e), "success":False}
     
@@ -113,29 +131,36 @@ class PostgresqlType:
 
     def dataFetch(self, table, key= "*", key_value=None, tag=None):
         cursor = self.connect()[0].cursor()
-        query = f"""SELECT {key} FROM "{table}" """
-
+        # if tag is none then, by default, it is fetching id from groups
         if tag == "items":
-            query = f"""SELECT * FROM "{table}" WHERE {key}=={key_value} """
+            query = f"""SELECT * FROM {table} WHERE {key}={key_value} """
+            cursor.execute(query)
+            data = cursor.fetchall()
+            if len(data)>0:
+                return data, True
+            else: 
+                return data, False
+        
+        else:
+            query = f"""SELECT {key} FROM {table} """
+            cursor.execute(query)
+            data = cursor.fetchall()
+            ls = []
+            if len(data)>0:
+                for i in data:
+                    ls.append(i[0])
+                return ls, True
+            else: 
+                return ls, False
+    
+    def columnsFetch(self, table, key, key_value=None, tag=None):
+        cursor = self.connect()[0].cursor()
+        query = f"""SELECT * FROM {table} WHERE {key}={key_value} """
         cursor.execute(query)
-        data = cursor.fetchall()
-        if len(data)>0:
-            return data, True
-        else: 
-            return data, False
+        cursor.fetchall()
+        ls = list(i[0] for i in cursor.description)
+        return ls
     
-    
-
-        
-
-
-# cursor.close()
-# connection.commit()
-        
-        
-
-    # fetch data from tables specified
-        
     
 class Mongodb:
     def __init__(self, connect_string, dbName) :
