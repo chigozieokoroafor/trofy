@@ -253,6 +253,7 @@ def fetchD():
                 else:        
                     return jsonify({"success":False, "message":"unable to connect"}), 400
             except Exception as E:
+                print(E)
                 return jsonify({"success":False, "message":str(E)}), 400
         
         
@@ -269,6 +270,7 @@ def fetchD():
         if check["nameOfDb"].lower() == "postgresql":
             groupTable = check["groupTable"]
             data = PostgresqlType(connection_string).dataFetch(groupTable)
+            # print(data)
             return jsonify({"success":True, "message":"", "data":data[0]}), 200
         
             # data = SQLType(connection_string, groupTable).getGroupData()

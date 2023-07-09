@@ -145,13 +145,18 @@ class PostgresqlType:
             query = f"""SELECT {key} FROM {table} """
             cursor.execute(query)
             data = cursor.fetchall()
+            xr = list(i[0] for i in cursor.description)
             ls = []
             if len(data)>0:
                 for i in data:
-                    ls.append(i[0])
+                    dic = zip(xr, i)
+                    a = dict(dic)
+                    ls.append(a)
+                    # print(ls)
                 return ls, True
             else: 
                 return ls, False
+            
     
     def columnsFetch(self, table, key, key_value=None, tag=None):
         cursor = self.connect()[0].cursor()
