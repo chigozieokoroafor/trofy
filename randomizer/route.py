@@ -30,6 +30,7 @@ def getKey():
     db_type = request.json.get("db_type")
     connection_string = request.json.get("db_string")    
     check = users.find_one({"connect_string":connection_string})
+    # print(type(check))
     if check != None:
         if db_type.lower() == "nosql":
             
