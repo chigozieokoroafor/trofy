@@ -157,7 +157,22 @@ class PostgresqlType:
             else: 
                 return ls, False
             
-    
+    def dataFetchUp(self, table, key= "*", key_value=None, tag=None):
+            cursor = self.connect()[0].cursor()
+            query = f"""SELECT {key} FROM {table} """
+            cursor.execute(query)
+            data = cursor.fetchall()
+            # xr = list(i[0] for i in cursor.description)
+            ls = []
+            if len(data)>0:
+                for i in data:
+                    # dic = zip(xr, i)
+                    # a = dict(dic)
+                    ls.append(i[0])
+                    # print(ls)
+                return ls, True
+            else: 
+                return ls, False
     def columnsFetch(self, table, key, key_value=None, tag=None):
         cursor = self.connect()[0].cursor()
         query = f"""SELECT * FROM {table} WHERE {key}={key_value} """

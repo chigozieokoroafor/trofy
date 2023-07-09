@@ -181,7 +181,7 @@ def getKey():
 
                         
                         db.create_collection(api_key)
-                        db_data_list = PostgresqlType(connection_string).dataFetch(itemTable, primaryKey) # will have to test this out
+                        db_data_list = PostgresqlType(connection_string).dataFetchUp(itemTable, primaryKey) # will have to test this out
                         
                         
                         ls = db_data_list[0]
