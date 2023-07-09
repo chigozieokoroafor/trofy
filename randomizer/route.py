@@ -31,7 +31,7 @@ def getKey():
     connection_string = request.json.get("db_string")    
     check = users.find_one({"connect_string":connection_string})
     # print(type(check))
-    if check != None:
+    if check == None:
         if db_type.lower() == "nosql":
             
             nameOfDb = request.json.get("nameOfDb")
@@ -193,7 +193,7 @@ def getKey():
     
         return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
     else:
-        return {"success":False, "api_key":"", "message":"account with connection string exists"}, 400
+        return {"success":False, "api_key":"", "message":"account with connection string exists"}, 402
 
  
 @route.route("/fetchGroups", methods=["GET"]) # add sort filters

@@ -8,4 +8,4 @@ connect =  MongoClient(connect_string)
 db = connect["TROPY"]
 
 users = db["conn_col"]
-users.create_index("connect_string", unique=True)
+# users.create_index("connect_string", unique=True)
