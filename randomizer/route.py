@@ -28,88 +28,141 @@ def h():
 def getKey():
     #  this part is for mongodb nosql database
     db_type = request.json.get("db_type")
-    
-    if db_type.lower() == "nosql":
-        connection_string = request.json.get("db_string")    
-        nameOfDb = request.json.get("nameOfDb")
-        dbName = request.json.get("dbName")
-         #this is the specific name of the db containing the collection that would be used.
-        collectionTableName = request.json.get("groupCollection") # this specifies the collection or table containing data using in grouping products
-        itemCollection = request.json.get("itemCollection")
-        groupKeyName = request.json.get("groupKeyName") # this is the key used to identify the products in a specific group.
-
-    
-        if nameOfDb.lower() in support[db_type.lower()]:
-            if nameOfDb.lower() == "mongodb":
-            #currently, this supports only mongodb
-                # db = Mongodb(connection_string)
-                # connection = db.connect()
-                conn = Mongodb(connection_string,dbName).getDatabase()
-
-                if type(conn) != dict:    
-                    api_key = createKey()
-                    data = {
-                        "_id":api_key,
-                        "connect_string":connection_string,
-                        "type":db_type, 
-                        "dbName":dbName, 
-                        "nameOfDb":nameOfDb,
-                        "groupCollection":collectionTableName,
-                        "itemCollection":itemCollection,
-                        "groupKeyName":groupKeyName
-                    }
-
-                    try:
-                        users.insert_one(data)
-                        db.create_collection(api_key)
-                        db_data_list = conn[collectionTableName].find()
-                        ls = [str(i["_id"]) for i in db_data_list]
-                        db[api_key].insert_one({"items": ls, "tag":"items"})
-                        # db[api_key]
-                    except:
-                        api_key = createKey()
-                        data["_id"] =  api_key
-                        users.insert_one(data)
-                        db.create_collection(api_key)
-                        db_data_list = conn[collectionTableName].find()
-                        ls = [str(i["_id"]) for i in db_data_list]
-                        db[api_key].insert_one({"items": ls, "tag":"items"})
-
-                    return {"success":True, "api_key":api_key, "message":""}, 200
-                return {"success":False, "api_key":"", "message":"couldn't connect to Mongodb db using connection string provided"}, 400
-
-            else:
-                return {"success":False, "api_key":"", "message":f"{nameOfDb} currently not supported"}
+    connection_string = request.json.get("db_string")    
+    check = users.find_one({"connect_string":connection_string})
+    if check != None:
+        if db_type.lower() == "nosql":
             
-    if db_type.lower()  == "sql":
-        url = request.json.get("db_string")
-        groupTable = request.json.get("groupTable") # this specifies the collection or table containing data using in grouping products
-        itemTable = request.json.get("itemTable")
-        primaryKey = request.json.get("primaryKey") # this is the name of the primaryKey that is used to store the group_id
-        foreignKey = request.json.get("foreignKey") # this is the key that links products to specific groups.
-        nameOfDb = request.json.get("nameOfDb")
+            nameOfDb = request.json.get("nameOfDb")
+            dbName = request.json.get("dbName")
+            #this is the specific name of the db containing the collection that would be used.
+            collectionTableName = request.json.get("groupCollection") # this specifies the collection or table containing data using in grouping products
+            itemCollection = request.json.get("itemCollection")
+            groupKeyName = request.json.get("groupKeyName") # this is the key used to identify the products in a specific group.
 
-        if nameOfDb.lower() in support[db_type.lower()]:
-            if nameOfDb.lower() == "mysql" :
-                # connection_check = SQLType(url, groupTable).getTable(primaryKey)
-                connection_check = SQLType(url, groupTable).connect()
-                
-                if connection_check[1] == False:
-                    return jsonify({"success":False, "api_key":"", "message":connection_check[0]}), 400
-                else:
-                    groupFetch = SQLType(url, groupTable).getTableData(primaryKey)
-                    if groupFetch[1] == False:
-                        return  jsonify({"success":False, "api_key":"", "message":groupFetch["detail"]}), 400
-                    
-                    # not sure if this product check is feasible.
-                    # productFetch = SQLType(url, groupTable).getTableData(foreignKey)
-                    # if type(productFetch) != bool:
-                    #     return  jsonify({"success":False, "api_key":"", "message":productFetch["detail"]}), 400
-                    else:
+        
+            if nameOfDb.lower() in support[db_type.lower()]:
+                if nameOfDb.lower() == "mongodb":
+                #currently, this supports only mongodb
+                    # db = Mongodb(connection_string)
+                    # connection = db.connect()
+                    conn = Mongodb(connection_string,dbName).getDatabase()
+
+                    if type(conn) != dict:    
                         api_key = createKey()
                         data = {
                             "_id":api_key,
-                            "connect_string":url,
+                            "connect_string":connection_string,
+                            "type":db_type, 
+                            "dbName":dbName, 
+                            "nameOfDb":nameOfDb,
+                            "groupCollection":collectionTableName,
+                            "itemCollection":itemCollection,
+                            "groupKeyName":groupKeyName
+                        }
+
+                        try:
+                            users.insert_one(data)
+                            db.create_collection(api_key)
+                            db_data_list = conn[collectionTableName].find()
+                            ls = [str(i["_id"]) for i in db_data_list]
+                            db[api_key].insert_one({"items": ls, "tag":"items"})
+                            # db[api_key]
+                        except:
+                            api_key = createKey()
+                            data["_id"] =  api_key
+                            users.insert_one(data)
+                            db.create_collection(api_key)
+                            db_data_list = conn[collectionTableName].find()
+                            ls = [str(i["_id"]) for i in db_data_list]
+                            db[api_key].insert_one({"items": ls, "tag":"items"})
+
+                        return {"success":True, "api_key":api_key, "message":""}, 200
+                    return {"success":False, "api_key":"", "message":"couldn't connect to Mongodb db using connection string provided"}, 400
+
+                else:
+                    return {"success":False, "api_key":"", "message":f"{nameOfDb} currently not supported"}
+                
+        if db_type.lower()  == "sql":
+            
+            groupTable = request.json.get("groupTable") # this specifies the collection or table containing data using in grouping products
+            itemTable = request.json.get("itemTable")
+            primaryKey = request.json.get("primaryKey") # this is the name of the primaryKey that is used to store the group_id
+            foreignKey = request.json.get("foreignKey") # this is the key that links products to specific groups.
+            nameOfDb = request.json.get("nameOfDb")
+
+            if nameOfDb.lower() in support[db_type.lower()]:
+                if nameOfDb.lower() == "mysql" :
+                    # connection_check = SQLType(url, groupTable).getTable(primaryKey)
+                    connection_check = SQLType(connection_string, groupTable).connect()
+                    
+                    if connection_check[1] == False:
+                        return jsonify({"success":False, "api_key":"", "message":connection_check[0]}), 400
+                    else:
+                        groupFetch = SQLType(connection_string, groupTable).getTableData(primaryKey)
+                        if groupFetch[1] == False:
+                            return  jsonify({"success":False, "api_key":"", "message":groupFetch["detail"]}), 400
+                        
+                        # not sure if this product check is feasible.
+                        # productFetch = SQLType(url, groupTable).getTableData(foreignKey)
+                        # if type(productFetch) != bool:
+                        #     return  jsonify({"success":False, "api_key":"", "message":productFetch["detail"]}), 400
+                        else:
+                            api_key = createKey()
+                            data = {
+                                "_id":api_key,
+                                "connect_string":connection_string,
+                                "type":db_type, 
+                                "nameOfDb":nameOfDb,
+                                "groupTable":groupTable,
+                                "itemTable":itemTable,
+                                "primaryKey":primaryKey,
+                                "foreignKey":foreignKey
+                            }
+
+                            try:
+                                users.insert_one(data)
+                                db.create_collection(api_key)
+                                db_data_list = SQLType(connection_string, groupTable).getTableData(primaryKey) # will have to test this out
+                                
+                                if db_data_list[1] == True:
+                                    ls = db_data_list[0]
+                                    db[api_key].insert_one({"items": ls, "tag":"items"})
+                                else:
+                                    return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
+                            except:
+                                api_key = createKey()
+                                data["_id"] =  api_key
+                                users.insert_one(data)
+                                db.create_collection(api_key)
+                                db_data_list = SQLType(connection_string, groupTable).getTableData(primaryKey) # will have to test this out
+                                
+                                if db_data_list[1] == True:
+                                    ls = db_data_list[0]
+                                    db[api_key].insert_one({"items": ls, "tag":"items"})
+                                else:
+                                    return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
+                            return {"success":True, "api_key":api_key, "message":""}, 200
+
+                if  nameOfDb.lower() == "postgresql":
+                    connection_check = PostgresqlType(connection_string).connect()
+                    
+                    if connection_check[1] == False:
+                        return jsonify({"success":False, "api_key":"", "message":connection_check[0]}), 400
+                    else:
+                        # this part checks for the group table
+                        groupFetch = PostgresqlType(connection_string).tableCheck(groupTable)
+                        if groupFetch == False:
+                            return  jsonify({"success":False, "api_key":"", "message":f"'{groupTable}' doesn't exist"}), 400 
+                        # this part checks for the product table
+                        pFetch = PostgresqlType(connection_string).tableCheck(itemTable)
+                        if pFetch == False:
+                            return  jsonify({"success":False, "api_key":"", "message":f"'{itemTable}' doesn't exist"}), 400
+                        
+                        api_key = createKey()
+                        data = {
+                            "_id":api_key,
+                            "connect_string":connection_string,
                             "type":db_type, 
                             "nameOfDb":nameOfDb,
                             "groupTable":groupTable,
@@ -120,75 +173,26 @@ def getKey():
 
                         try:
                             users.insert_one(data)
-                            db.create_collection(api_key)
-                            db_data_list = SQLType(url, groupTable).getTableData(primaryKey) # will have to test this out
-                            
-                            if db_data_list[1] == True:
-                                ls = db_data_list[0]
-                                db[api_key].insert_one({"items": ls, "tag":"items"})
-                            else:
-                                return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
                         except:
                             api_key = createKey()
                             data["_id"] =  api_key
                             users.insert_one(data)
-                            db.create_collection(api_key)
-                            db_data_list = SQLType(url, groupTable).getTableData(primaryKey) # will have to test this out
-                            
-                            if db_data_list[1] == True:
-                                ls = db_data_list[0]
-                                db[api_key].insert_one({"items": ls, "tag":"items"})
-                            else:
-                                return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400 
+
+                        
+                        db.create_collection(api_key)
+                        db_data_list = PostgresqlType(connection_string).dataFetch(itemTable, primaryKey) # will have to test this out
+                        
+                        
+                        ls = db_data_list[0]
+                        db[api_key].insert_one({"items": ls, "tag":"items"})
+
                         return {"success":True, "api_key":api_key, "message":""}, 200
-
-            if  nameOfDb.lower() == "postgresql":
-                connection_check = PostgresqlType(url).connect()
-                
-                if connection_check[1] == False:
-                    return jsonify({"success":False, "api_key":"", "message":connection_check[0]}), 400
-                else:
-                    # this part checks for the group table
-                    groupFetch = PostgresqlType(url).tableCheck(groupTable)
-                    if groupFetch == False:
-                        return  jsonify({"success":False, "api_key":"", "message":f"'{groupTable}' doesn't exist"}), 400 
-                    # this part checks for the product table
-                    pFetch = PostgresqlType(url).tableCheck(itemTable)
-                    if pFetch == False:
-                        return  jsonify({"success":False, "api_key":"", "message":f"'{itemTable}' doesn't exist"}), 400
-                    
-                    api_key = createKey()
-                    data = {
-                        "_id":api_key,
-                        "connect_string":url,
-                        "type":db_type, 
-                        "nameOfDb":nameOfDb,
-                        "groupTable":groupTable,
-                        "itemTable":itemTable,
-                        "primaryKey":primaryKey,
-                        "foreignKey":foreignKey
-                    }
-
-                    try:
-                        users.insert_one(data)
-                    except:
-                        api_key = createKey()
-                        data["_id"] =  api_key
-                        users.insert_one(data)
-
-                    
-                    db.create_collection(api_key)
-                    db_data_list = PostgresqlType(url).dataFetch(itemTable, primaryKey) # will have to test this out
-                    
-                    
-                    ls = db_data_list[0]
-                    db[api_key].insert_one({"items": ls, "tag":"items"})
-
-                    return {"success":True, "api_key":api_key, "message":""}, 200
 
 
     
-    return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
+        return {"success":False, "api_key":"", "message":f"{nameOfDb} not currently supported"}, 400
+    else:
+        return {"success":False, "api_key":"", "message":"account with connection string exists"}, 400
 
  
 @route.route("/fetchGroups", methods=["GET"]) # add sort filters
