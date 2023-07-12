@@ -130,13 +130,14 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                                     user_pref = sp_user["user_pref"]
                                     products_list = []
                                     if len(user_pref)>0:
-                                        for pref in user_pref  :
+                                        # print(user_pref)
+                                        for pref in user_pref  : # use a while loop here, because it isn't traversing through all the preference objects  for a user.
                                             gp_pref_list = pref["item_pref_list"]
                                             p_Scale = pref["pref_rating"]
                                             # print(gp_pref_list)                       
                                             # print("*************************")
                                                                     # print(data)
-                                            for group_id in gp_pref_list:
+                                            for group_id in gp_pref_list: 
                                                 product_fetch = PostgresqlType(connect_string).dataFetch(itemTable, key=foreignKey, key_value=group_id, tag="items")
                                                 keys = PostgresqlType(connect_string).columnsFetch(itemTable, key=foreignKey, key_value=group_id, tag="items")
                                                 if product_fetch[1] == True:
@@ -151,9 +152,9 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                                                             products_list.append(json_product)
                                                                         
                                                                             
-                                            db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
-                                            print(f"done with {sp_user['_id']}")
-                                            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                                    db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                                    # print(f"done with {sp_user['_id']}")
+                                    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                         # users_list.pop(0)    
                     try:
