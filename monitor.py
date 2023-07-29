@@ -24,8 +24,8 @@ async def fetchAPiKeys():
 
 async def fetch_user_products(): # not done with this yet this works only for mongodb connections.
     while True:
-        await asyncio.sleep(12)
-        try:
+            await asyncio.sleep(12)
+            # try:
             if len(users_list) > 0:
                 # either create a loop here to check for new items
                 # for user_ in user_list:
@@ -164,8 +164,8 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                     # users_list.pop(0)
                 except IndexError as e:
                     print("list empty")
-        except Exception as e:
-            print(e)
+        # except Exception as e:
+        #     print(e)
 # create   async function to pwriodically update item groups in db.
 # for sql figure out how it would be different. 
 

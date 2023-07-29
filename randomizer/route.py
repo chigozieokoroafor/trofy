@@ -383,7 +383,10 @@ def userPref():
             r = 5.0
             if pref_rating != None:
                 r=float(pref_rating)
-
+            try:
+                user_id = int(user_id)
+            except:
+                pass
             if user_id == None:
                 return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
@@ -411,7 +414,7 @@ def userPref():
 
                 return jsonify({"success":True, "message":"", "data":rand}), 200
                 
-            return jsonify({"success":False, "message":f" preferences for {user_id} not found"}), 400
+            return jsonify({"success":False, "message":f"Preferences for {user_id} not found"}), 400
 
 
         if request.method == "POST": # to add new preferences
