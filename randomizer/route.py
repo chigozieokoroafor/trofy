@@ -390,30 +390,28 @@ def userPref():
             if user_id == None:
                 return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
-            
             if user_check != None:
-                # user_pref_list = list(filter(lambda p: r>p["pref_rating"]< r+5 ,user_check["user_pref"]))
-                # print(user_pref_list)
-                # print(user_check["products_pref"])
-                # print(r)
-                # user_pref_list = list(filter(lambda p: r>p["trofy_rating"]< r+5, user_check["products_pref"]))
-                # print(user_pref_list)
-                user_pref_list = []
-                for i in user_check["products_perf"]:
-                    if r < i["trofy_rating"] < r+3.0:
-                                keys =[x for x in i.keys()]
-                                for key in keys:
-                                    if type(i[key]) == ObjectId:
-                                        i[key] = str(ObjectId(i[key]))
-                                    if type(i[key]) == dict or type(i[key]) == list:
-                                        i.pop(key)
-                                user_pref_list.append(i)
-                rand = []
-                if len(user_pref_list) != 0:
-                    rand =  random.choices(user_pref_list, k=5)   
-
-                return jsonify({"success":True, "message":"", "data":rand}), 200
                 
+                user_pref_list = []
+                try:
+                    for i in user_check["products_perf"]:
+                        if r < i["trofy_rating"] < r+3.0:
+                                    keys =[x for x in i.keys()]
+                                    for key in keys:
+                                        if type(i[key]) == ObjectId:
+                                            i[key] = str(ObjectId(i[key]))
+                                        if type(i[key]) == dict or type(i[key]) == list:
+                                            i.pop(key)
+                                    user_pref_list.append(i)
+                    rand = []
+                    if len(user_pref_list) > 5:
+                        rand =  random.choices(user_pref_list, k=5)   
+                    else:
+                        rand = user_pref_list
+                except KeyError:
+                    rand = []
+                return jsonify({"success":True, "message":"", "data":rand}), 200
+           
             return jsonify({"success":False, "message":f"Preferences for {user_id} not found"}), 400
 
 
