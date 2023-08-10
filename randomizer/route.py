@@ -372,14 +372,11 @@ def userPref():
         return jsonify({"success":False, "message":"api_key required"}), 400
     check = users.find_one({"_id":api_key})
     if check != None:
-        # connection_string = check["connect_string"]
-        # dbName = check["dbName"]
         
-        # conn = Mongodb(connection_string,dbName).getDatabase()
         if request.method == "GET": # this request gets data based on user's preference.
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
-            # itemCollection = check["itemCollection"] 
+            
             r = 5.0
             if pref_rating != None:
                 r=float(pref_rating)
@@ -419,7 +416,7 @@ def userPref():
             info =  request.json
             user_id = info.get("user_id") #user_id
             pref_list = info.get("preference_list") # this indicates a list of moods along with their products list
-            # pref_category = info.get("pref_category") # this indicates what product category is being picked.
+            
             if user_id != None:
                 if type(pref_list) == list:
                     if len(pref_list) > 0:
@@ -442,7 +439,7 @@ def userPref():
                             db[api_key].update_one({"_id":user_id},{"$set": {"user_pref":pref_list}})
                             return jsonify({"success":True, "message":"Preferences updated.", "data":[]}), 200
                         
-                    # return jsonify({"success":False, "message":" 'preference_list' type should be a list of dictionaries/object"}), 400
+                    
                     
                     
 
