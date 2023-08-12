@@ -110,22 +110,17 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                         elif user_["nameOfDb"].lower() == "postgresql":
                             try:
                                 connect_string = user_["connect_string"]
-                                                    
-
-                                                    #  1
-
+                                
                                 itemTable = user_["itemTable"]
                                 foreignKey = user_["foreignKey"].lower() 
 
                                                             
                                 all_users = db[user_["_id"]].find({"tag":"user"}) 
                                 all_users = [ i for i in all_users]
-                                print(all_users)
-                                print("///////////////////////////////print//////////////////////")
+                                
                                 while len(all_users)>0:
                                     sp_user = all_users[0]
-                                    print(sp_user)
-                                    print("=========print_users===========")
+                                    
                                     user_pref = sp_user["user_pref"]
                                     products_list = []
                                     if len(user_pref)>0:
@@ -150,7 +145,7 @@ async def fetch_user_products(): # not done with this yet this works only for mo
                                                                             
                                     db[user_["_id"]].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
                                     
-                                    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                                    
                                     all_users.pop(0)
                             except Exception as e:
                                 print(e)
