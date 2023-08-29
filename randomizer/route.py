@@ -377,7 +377,7 @@ def userPref():
             user_id = request.args.get("user")
             pref_rating =  request.args.get("pref_rating")
             
-            r = 5.0
+            r = 10.0
             if pref_rating != None:
                 r=float(pref_rating)
             try:
@@ -392,7 +392,7 @@ def userPref():
                 user_pref_list = []
                 try:
                     for i in user_check["products_perf"]:
-                        if r < i["trofy_rating"] < r+3.0:
+                        if r <= i["trofy_rating"] < r+3.0:
                                     keys =[x for x in i.keys()]
                                     for key in keys:
                                         if type(i[key]) == ObjectId:
