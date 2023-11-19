@@ -204,7 +204,6 @@ def fetchD():
     page = request.args.get("page") or 1
     filter_key_dtype = request.args.get("filter_key_dtype")
     filter_key_value = request.args.get("filter_key_value") #only works for type int, float and double.
-    # sorter = request.args.get("sortby")
 
     
     
@@ -284,12 +283,11 @@ def fetchD():
 @route.route("/connectionData", methods=["PUT", "GET"])
 def updateConnectiondata():
     api_key = request.headers.get("api_key")
-    # print(api_key)
     check = users.find_one({"_id":api_key})
-    # print(check)
     if check != None:
         if request.method == "GET":
             data = check
+            
             data.pop("_id")
             return jsonify({"success":True, "message":"", "data":data}), 200
         
@@ -358,10 +356,6 @@ def updateConnectiondata():
                     else:
                         return jsonify({"message":"invalid connection string", "success":False}),  400
 
-
-
-                
-
     return jsonify({"success":False, "message":"Invalid Api-Key"}), 400
 
 
@@ -387,11 +381,12 @@ def userPref():
             if user_id == None:
                 return jsonify({"success":False, "message":"'user' querystring cannot be null"}), 400
             user_check = db[api_key].find_one({"_id":user_id, "tag":"user"})
+            
             if user_check != None:
                 
                 user_pref_list = []
                 try:
-                    for i in user_check["products_perf"]:
+                    for i in user_check["products_pref"]:
                         if r <= i["trofy_rating"] < r+3.0:
                                     keys =[x for x in i.keys()]
                                     for key in keys:
@@ -405,7 +400,8 @@ def userPref():
                         rand =  random.choices(user_pref_list, k=5)   
                     else:
                         rand = user_pref_list
-                except KeyError:
+                except KeyError as e:
+                    print(e)
                     rand = []
                 return jsonify({"success":True, "message":"", "data":rand}), 200
            

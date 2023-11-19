@@ -13,16 +13,7 @@ def createKey():
     return key
 
 def convDict(keys, array_list):
-    # ls = []
-    # for array in array_list:
-    #     count = 0
-    #     d = {}
-    #     for i in keys:
-    #         d[i] =  array[count]
-    #         count += 1
-    #     ls.append(d)
-
-    # return ls
+    
     a = zip(keys, array_list)
     return a
 

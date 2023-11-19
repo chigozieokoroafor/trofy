@@ -15,7 +15,7 @@ async def fetchAPiKeys():
         all_users = users.find({})
         for i in all_users:
             if i["nameOfDb"].lower() == "mongodb":
-                user = threading.Thread(target=fetch_user_products_mongo, args=(i['_id'], i["itemCollection"], i["groupCollection"], i["groupKeyName"], i["nameOfDb"]))
+                user = threading.Thread(target=fetch_user_products_mongo, args=(i['_id'], i["itemCollection"], i["groupKeyName"], i["dbName"], i["connect_string"]))
             elif i["nameOfDb"].lower() == "postgresql" or i["nameOfDb"].lower() == "mysql":
                 user = threading.Thread(target=fetch_user_products, args=(i['_id'], i["itemTable"], i["groupTable"], i["foreignKey"], i["nameOfDb"], i['connect_string']))
         user.start()
@@ -57,7 +57,7 @@ def fetch_user_products(user_id, itemTable, groupTable, foreignKey, nameOfDb, co
                                     products_list.append(product)
                             
                                 
-                        db[user_id].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                        db[user_id].update_one({"_id":sp_user["_id"]}, {"$set":{"products_pref":products_list}})
                     # print(f"done with {sp_user['_id']}")
                     
             else:
@@ -98,7 +98,7 @@ def fetch_user_products(user_id, itemTable, groupTable, foreignKey, nameOfDb, co
                                         products_list.append(json_product)
                                                     
                                                         
-                db[user_id].update_one({"_id":sp_user["_id"]}, {"$set":{"products_perf":products_list}})
+                db[user_id].update_one({"_id":sp_user["_id"]}, {"$set":{"products_pref":products_list}})
                 
                 
                 all_users.pop(0)
