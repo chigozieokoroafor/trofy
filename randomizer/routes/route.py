@@ -1,12 +1,11 @@
 from flask import Blueprint, request, jsonify
 # from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
-from randomizer.function import Mongodb, createKey, SQLType, PostgresqlType
+from randomizer.function import Mongodb, createKey, SQLType, PostgresqlType, Authentication, secret_key
 from randomizer.config import db, connection_collection
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
-import collections
-import random
+import collections, jwt, random
 
 
 
@@ -25,7 +24,16 @@ def h():
     return jsonify({"detail":"Health check success"}), 200
 
 @route.route("/getAPIKey", methods=["POST"])
+@Authentication.token_required
 def getKey():
+    token = request.headers.get("Authorization")
+    decoded_data = jwt.decode(token, secret_key,algorithms=["HS256"])
+    # refresh_t = Authentication.tokenExpCheck(decoded_data["exp"], decoded_data)
+    try:
+        user_id = decoded_data["id"]
+    except:
+        return jsonify({"message":"Unauthorized access", "success":False, "detail":{}}), 400
+    
     #  this part is for mongodb nosql database
     db_type = request.json.get("db_type")
     connection_string = request.json.get("db_string")    
@@ -59,7 +67,8 @@ def getKey():
                             "nameOfDb":nameOfDb,
                             "groupCollection":collectionTableName,
                             "itemCollection":itemCollection,
-                            "groupKeyName":groupKeyName
+                            "groupKeyName":groupKeyName,
+                            "org_id":user_id
                         }
 
                         try:
@@ -281,9 +290,18 @@ def fetchD():
 
 # reqrite the put request to be able to update the new changes in the getAPIKey request.
 @route.route("/connectionData", methods=["PUT", "GET"])
+@Authentication.token_required
 def updateConnectiondata():
-    api_key = request.headers.get("api_key")
-    check = connection_collection.find_one({"_id":api_key})
+    token = request.headers.get("Authorization")
+    decoded_data = jwt.decode(token, secret_key,algorithms=["HS256"])
+    # refresh_t = Authentication.tokenExpCheck(decoded_data["exp"], decoded_data)
+    try:
+        user_id = decoded_data["id"]
+    except:
+        return jsonify({"message":"Unauthorized access", "success":False, "detail":{}}), 400
+    
+    # api_key = request.headers.get("api_key")
+    check = connection_collection.find_one({"org_id":user_id})
     if check != None:
         if request.method == "GET":
             data = check
@@ -329,6 +347,7 @@ def updateConnectiondata():
 
                 if nameOfDb.lower == "sql":
                     pass
+
                 if nameOfDb.lower == "postgresql":
                     bd_string_check = PostgresqlType(url)
                     if bd_string_check[1] == True:
