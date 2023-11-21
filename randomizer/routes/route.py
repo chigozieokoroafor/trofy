@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 # from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from randomizer.function import Mongodb, createKey, SQLType, PostgresqlType
-from randomizer.config import users, db
+from randomizer.config import db, connection_collection
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 import collections
@@ -29,7 +29,7 @@ def getKey():
     #  this part is for mongodb nosql database
     db_type = request.json.get("db_type")
     connection_string = request.json.get("db_string")    
-    check = users.find_one({"connect_string":connection_string})
+    check = connection_collection.find_one({"connect_string":connection_string})
     # print(type(check))
     if check == None:
         if db_type.lower() == "nosql":
@@ -63,7 +63,7 @@ def getKey():
                         }
 
                         try:
-                            users.insert_one(data)
+                            connection_collection.insert_one(data)
                             db.create_collection(api_key)
                             db_data_list = conn[collectionTableName].find()
                             ls = [str(i["_id"]) for i in db_data_list]
@@ -72,7 +72,7 @@ def getKey():
                         except:
                             api_key = createKey()
                             data["_id"] =  api_key
-                            users.insert_one(data)
+                            connection_collection.insert_one(data)
                             db.create_collection(api_key)
                             db_data_list = conn[collectionTableName].find()
                             ls = [str(i["_id"]) for i in db_data_list]
@@ -122,7 +122,7 @@ def getKey():
                             }
 
                             try:
-                                users.insert_one(data)
+                                connection_collection.insert_one(data)
                                 db.create_collection(api_key)
                                 db_data_list = SQLType(connection_string, groupTable).getTableData(primaryKey) # will have to test this out
                                 
@@ -134,7 +134,7 @@ def getKey():
                             except:
                                 api_key = createKey()
                                 data["_id"] =  api_key
-                                users.insert_one(data)
+                                connection_collection.insert_one(data)
                                 db.create_collection(api_key)
                                 db_data_list = SQLType(connection_string, groupTable).getTableData(primaryKey) # will have to test this out
                                 
@@ -173,11 +173,11 @@ def getKey():
                         }
 
                         try:
-                            users.insert_one(data)
+                            connection_collection.insert_one(data)
                         except:
                             api_key = createKey()
                             data["_id"] =  api_key
-                            users.insert_one(data)
+                            connection_collection.insert_one(data)
 
                         
                         db.create_collection(api_key)
@@ -211,7 +211,7 @@ def fetchD():
 
     # print(page, limit , skip)
 
-    check = users.find_one({"_id":api_key})
+    check = connection_collection.find_one({"_id":api_key})
     if check != None:
         connection_string = check["connect_string"]
 
@@ -283,7 +283,7 @@ def fetchD():
 @route.route("/connectionData", methods=["PUT", "GET"])
 def updateConnectiondata():
     api_key = request.headers.get("api_key")
-    check = users.find_one({"_id":api_key})
+    check = connection_collection.find_one({"_id":api_key})
     if check != None:
         if request.method == "GET":
             data = check
@@ -315,7 +315,7 @@ def updateConnectiondata():
                             "groupCollection":groupCollection,
                             "itemCollection":itemCollection
                         }
-                        users.update_one({"_id":api_key}, {"$set":data})
+                        connection_collection.update_one({"_id":api_key}, {"$set":data})
                         return jsonify({"success":True, "message":"connection details uploaded"}), 200
                     return jsonify({"message":"invalid connection string", "success":False}),  400
 
@@ -349,7 +349,7 @@ def updateConnectiondata():
                                 "foreignKey":foreignKey
                             }
                         
-                        users.update_one({"_id":api_key}, {"$set":data})
+                        connection_collection.update_one({"_id":api_key}, {"$set":data})
 
                         return jsonify({"success":True, "message":"connection details uploaded"}), 200
                         
@@ -364,7 +364,7 @@ def userPref():
     api_key = request.headers.get("api_key")
     if api_key == None:
         return jsonify({"success":False, "message":"api_key required"}), 400
-    check = users.find_one({"_id":api_key})
+    check = connection_collection.find_one({"_id":api_key})
     if check != None:
         
         if request.method == "GET": # this request gets data based on user's preference.

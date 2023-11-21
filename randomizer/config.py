@@ -7,5 +7,9 @@ connect =  MongoClient(connect_string)
 
 db = connect["TROPY"]
 
-users = db["conn_col"]
-# users.create_index("connect_string", unique=True)
+connection_collection = db["conn_col"]
+users = db["users"]
+
+
+connection_collection.create_index("connect_string", unique=True)
+users.create_index("email", unique=True)
